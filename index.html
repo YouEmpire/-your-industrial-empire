@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Your Industrial Empire</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --neon-blue: #00d2ff; --neon-green: #39ff14; --neon-gold: #ffcc00; --bg-dark: #0a0a0b; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg-dark); color: white; text-align: center; margin: 0; padding: 20px; overflow: hidden; }
+        .screen { display: none; height: 90vh; flex-direction: column; justify-content: center; }
+        .active { display: flex; }
+        h1 { font-size: 24px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .industry-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 25px; margin-bottom: 15px; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
+        .industry-card:active { transform: scale(0.95); }
+        .industry-card.blue { border-left: 5px solid var(--neon-blue); box-shadow: -10px 0 20px -10px var(--neon-blue); }
+        .industry-card.green { border-left: 5px solid var(--neon-green); box-shadow: -10px 0 20px -10px var(--neon-green); }
+        .industry-card.gold { border-left: 5px solid var(--neon-gold); box-shadow: -10px 0 20px -10px var(--neon-gold); }
+        .card-icon { font-size: 40px; margin-bottom: 10px; }
+        .card-title { font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; }
+        .balance { font-size: 42px; font-weight: 800; color: var(--neon-gold); margin: 20px 0; text-shadow: 0 0 15px var(--neon-gold); }
+        .btn-work { background: linear-gradient(145deg, #ff9900, #ffcc00); border: none; color: black; padding: 25px; font-size: 24px; border-radius: 25px; cursor: pointer; font-weight: 900; box-shadow: 0 0 30px rgba(255,204,0,0.4); text-transform: uppercase; margin-top: 30px; }
+        .btn-work:active { transform: scale(0.92); box-shadow: 0 0 10px rgba(255,204,0,0.2); }
+    </style>
+</head>
+<body>
+    <div id="selection-screen" class="screen active">
+        <h1>ВЫБЕРИ ОТРАСЛЬ</h1>
+        <div class="industry-card blue" onclick="select('СТО', '🛠️', '#00d2ff')">
+            <div class="card-icon">🛠️</div><div class="card-title">Гараж</div>
+        </div>
+        <div class="industry-card green" onclick="select('ФЕРМА', '🚜', '#39ff14')">
+            <div class="card-icon">🚜</div><div class="card-title">Ферма</div>
+        </div>
+        <div class="industry-card gold" onclick="select('ШАХТА', '⛏️', '#ffcc00')">
+            <div class="card-icon">⛏️</div><div class="card-title">Шахта</div>
+        </div>
+    </div>
+    <div id="game-screen" class="screen">
+        <h1 id="header">ИМПЕРИЯ</h1>
+        <div class="balance" id="balance">100</div>
+        <div id="game-icon" style="font-size: 100px;">🏭</div>
+        <button class="btn-work" onclick="work()">РАБОТАТЬ</button>
+    </div>
+    <script>
+        let tg = window.Telegram.WebApp; tg.expand();
+        let balance = 100;
+        function select(name, icon, color) {
+            document.getElementById('selection-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            document.getElementById('header').innerText = name;
+            document.getElementById('header').style.color = color;
+            document.getElementById('game-icon').innerText = icon;
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        function work() {
+            balance += 10;
+            document.getElementById('balance').innerText = balance;
+            tg.HapticFeedback.impactOccurred('medium');
+        }
+    </script>
+</body>
+</html>
