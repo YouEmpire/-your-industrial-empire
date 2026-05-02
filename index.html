@@ -1,80 +1,128 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Your Industrial Empire</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
+
+
+
+    
+    
+    Your Industrial Empire
+    
+    
         :root { --blue: #00d2ff; --gold: #ffcc00; --bg: #0a0a0b; --card: #161618; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; user-select: none; overflow: hidden; }
-        .header { background: #111; padding: 15px; text-align: center; border-bottom: 2px solid var(--blue); }
-        .balance { font-size: 36px; font-weight: 900; color: var(--gold); text-shadow: 0 0 15px var(--gold); }
-        .main-container { height: 75vh; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
+        .header { background: #111; padding: 20px; text-align: center; border-bottom: 2px solid var(--blue); box-shadow: 0 5px 25px rgba(0,210,255,0.3); }
+        .balance { font-size: 42px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold); }
+        .passive-info { font-size: 14px; color: #00ff00; margin-top: 5px; font-weight: bold; letter-spacing: 1px; }
+        .main-container { height: 70vh; overflow-y: auto; padding: 20px; }
         .screen { display: none; }
         .screen.active { display: block; }
-        .building-display { background: var(--card); border-radius: 20px; padding: 30px; text-align: center; border: 1px solid #333; margin-bottom: 20px; }
-        .factory-icon { font-size: 100px; margin: 20px 0; display: block; }
-        .btn-work { background: linear-gradient(135deg, var(--blue), #0066ff); border: none; color: white; width: 100%; padding: 25px; border-radius: 20px; font-size: 26px; font-weight: 900; cursor: pointer; box-shadow: 0 6px #0044aa; text-transform: uppercase; }
+        .building-display { background: var(--card); border-radius: 25px; padding: 40px; text-align: center; border: 1px solid #333; box-shadow: 0 15px 50px rgba(0,0,0,0.9); }
+        .factory-icon { font-size: 100px; margin: 20px 0; display: inline-block; filter: drop-shadow(0 0 15px var(--blue)); }
+        
+        /* АНИМАЦИЯ ВРАЩЕНИЯ ШЕСТЕРНИ */
+        .working .factory-icon { animation: rotateGear 4s linear infinite; }
+        @keyframes rotateGear { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .btn-work { background: linear-gradient(135deg, var(--blue), #0066ff); border: none; color: white; width: 100%; padding: 25px; border-radius: 22px; font-size: 26px; font-weight: 900; cursor: pointer; box-shadow: 0 8px #0044aa; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
         .btn-work:active { transform: translateY(4px); box-shadow: 0 2px #0044aa; }
-        .upgrade-item { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--blue); }
-        .upg-name { font-weight: bold; font-size: 18px; color: var(--blue); }
-        .upg-price { color: var(--gold); font-size: 14px; }
+        .upgrade-item { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--blue); }
+        .upg-name { font-weight: bold; color: var(--blue); font-size: 18px; text-transform: uppercase; }
         .btn-buy { background: #222; border: 2px solid var(--blue); color: var(--blue); padding: 12px 20px; border-radius: 12px; font-weight: bold; text-transform: uppercase; }
+        .btn-buy:active { background: var(--blue); color: white; }
+
         .navbar { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-btn { color: #555; text-align: center; flex: 1; }
+        .nav-btn { color: #555; text-align: center; flex: 1; font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .nav-btn.active { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
-    </style>
-</head>
-<body>
-    <div class="header"><div class="balance" id="balance">100</div></div>
-    <div class="main-container">
-        <div id="screen-work" class="screen active">
-            <div class="building-display">
-                <div style="color: var(--blue); font-weight: 800;">ЦЕХ: ШИНОМОНТАЖ</div>
-                <span class="factory-icon" id="factory-img">🛠️</span>
-                <div style="margin-bottom: 10px;">УРОВЕНЬ: <span id="level-val">1</span></div>
-                <button class="btn-work" onclick="work()">РАБОТАТЬ</button>
-            </div>
-        </div>
-        <div id="screen-shop" class="screen">
-            <h2 style="text-align: left;">РЫНОК</h2>
-            <div class="upgrade-item">
-                <div><div class="upg-name">🔧 Инструменты</div><div class="upg-price">Цена: 250</div></div>
-                <button class="btn-buy" onclick="buy(250, 5, 'Готово!')">КУПИТЬ</button>
-            </div>
-            <div class="upgrade-item">
-                <div><div class="upg-name">🤖 Станок</div><div class="upg-price">Цена: 1000</div></div>
-                <button class="btn-buy" onclick="buy(1000, 20, 'Погнали!', true)">КУПИТЬ</button>
-            </div>
-        </div>
-    </div>
-    <div class="navbar">
-        <div class="nav-btn active" id="btn-work" onclick="nav('screen-work', 'btn-work')">🏭<br>ЦЕХ</div>
-        <div class="nav-btn" id="btn-shop" onclick="nav('screen-shop', 'btn-shop')">🛒<br>РЫНОК</div>
-    </div>
-    <script>
-        let tg = window.Telegram.WebApp; tg.expand();
-        let balance = 100; let power = 10; let level = 1;
+
+    
+        100
+        +0 🪙/сек
+    
+    
+        
+        
+            
+                Цех: Шиномонтаж
+                ⚙️
+                Уровень: 1
+                РАБОТАТЬ
+            
+        
+        
+        
+            РЫНОК МОДЕРНИЗАЦИИ
+            
+                
+                    🔧 Инструменты
+                    +2 к каждому клику
+                
+                200 🪙
+            
+            
+                
+                    🤖 Авто-станок
+                    +5 🪙/сек пассивно
+                
+                1000 🪙
+            
+        
+    
+    
+        🏭ЦЕХ
+        🛒РЫНОК
+    
+    
+        let tg = window.Telegram.WebApp; 
+        tg.expand(); 
+        tg.enableClosingConfirmation();
+
+        let balance = 100, power = 10, passive = 0, level = 1;
+
         function nav(s, b) {
             document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
-            document.getElementById(s).classList.add('active');
+            document.getElementById(s).classList.add('active'); 
             document.getElementById(b).classList.add('active');
             tg.HapticFeedback.impactOccurred('light');
         }
-        function work() { balance += power; update(); tg.HapticFeedback.impactOccurred('heavy'); }
-        function buy(c, a, m, l=false) {
-            if (balance >= c) {
-                balance -= c; power += a;
-                if (l) { level++; document.getElementById('factory-img').innerText = "🏗️"; }
-                update(); tg.HapticFeedback.notificationOccurred('success'); tg.showAlert(m);
-            } else { tg.showAlert("Мало денег!"); }
+
+        function work() { 
+            balance += power; 
+            updateUI(); 
+            tg.HapticFeedback.impactOccurred('heavy'); 
         }
-        function update() {
-            document.getElementById('balance').innerText = balance;
+
+        function buy(c, a, p, l=false) {
+            if (balance >= c) {
+                balance -= c; 
+                power += a; 
+                passive += p; 
+                if (l) level++;
+                updateUI(); 
+                tg.HapticFeedback.notificationOccurred('success');
+            } else { 
+                tg.HapticFeedback.notificationOccurred('error'); 
+                tg.showAlert("Мало монет для модернизации!"); 
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('balance').innerText = Math.floor(balance);
+            document.getElementById('p-income').innerText = "+" + passive + " 🪙/сек";
             document.getElementById('level-val').innerText = level;
         }
-    </script>
-</body>
-</html>
+
+        // ЦИКЛ ПАССИВНОГО ДОХОДА (10 раз в секунду для плавности)
+        setInterval(() => { 
+            if (passive > 0) { 
+                balance += (passive / 10); 
+                updateUI(); 
+            } 
+        }, 100);
+    
+
+
+
+    
+
+
+
+         
