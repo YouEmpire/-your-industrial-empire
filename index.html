@@ -3,120 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Industrial Empire: Synchronized</title>
+    <title>Industrial Monolith: Construction</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --blue: #00d2ff; --gold: #ffcc00; --bg: #050507; --ui: rgba(15, 15, 18, 0.95); }
+        :root { --blue: #00d2ff; --gold: #ffcc00; --bg: #050508; --card: rgba(20, 20, 25, 0.9); }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; user-select: none; overflow: hidden; }
         
-        .top-bar { background: var(--ui); padding: 15px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); z-index: 100; position: relative; }
-        .stat-value { font-size: 26px; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+        /* ВЕРХНЯЯ ПАНЕЛЬ */
+        .res-bar { background: #0a0a0f; padding: 10px 15px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; position: fixed; width: 100%; top: 0; z-index: 1000; box-sizing: border-box; }
+        .res-item { display: flex; flex-direction: column; }
+        .res-label { font-size: 8px; color: var(--blue); text-transform: uppercase; }
+        .res-val { font-size: 18px; font-weight: 900; color: var(--gold); }
 
-        #game-canvas { width: 100%; height: 55vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1e, #050507); }
-        
-        .building-container { position: relative; width: 320px; height: 320px; transform: rotateX(55deg) rotateZ(-45deg); transform-style: preserve-3d; transition: 0.3s; z-index: 10; }
-        .building-sprite { width: 100%; height: 100%; object-fit: contain; transform: rotateZ(45deg) rotateX(-55deg); filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9)); transition: 0.2s; }
-        
-        .control-panel { height: 35vh; background: #08080a; border-top: 1px solid #222; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
-        .btn-main { background: linear-gradient(135deg, #00d2ff, #0066ff); border: none; color: white; width: 100%; padding: 22px; border-radius: 20px; font-size: 24px; font-weight: 900; box-shadow: 0 6px #0044aa; text-transform: uppercase; cursor: pointer; }
-        .btn-main:active { transform: translateY(4px); box-shadow: 0 2px #0044aa; }
+        /* ИГРОВОЙ МИР */
+        .content-wrapper { height: 100vh; padding-top: 60px; padding-bottom: 80px; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; }
+        #world { height: 35vh; min-height: 250px; position: relative; background: radial-gradient(circle, #1a1a2e 0%, #050508 100%); display: flex; align-items: center; justify-content: center; }
+        .grid { position: absolute; width: 200%; height: 200%; background-image: linear-gradient(rgba(0,210,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,210,255,0.05) 1px, transparent 1px); background-size: 40px 40px; transform: rotateX(60deg) rotateZ(-45deg); }
+        .building { width: 240px; z-index: 10; animation: float 3s infinite ease-in-out; filter: drop-shadow(0 0 20px rgba(0,210,255,0.3)); }
+        (at)keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        .overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
-        .choice-btn { background: #121214; width: 90%; padding: 20px; margin: 8px; border-radius: 15px; border: 1px solid #333; display: flex; align-items: center; gap: 15px; cursor: pointer; }
+        /* ТАБЫ */
+        .tab { display: none; padding: 15px; }
+        .tab.active { display: block; animation: fadeIn 0.3s; }
+        (at)keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* UI ЭЛЕМЕНТЫ */
+        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--blue); }
+        .btn-work { background: linear-gradient(135deg, var(--blue), #0066ff); border: none; color: white; width: 100%; padding: 20px; border-radius: 15px; font-size: 20px; font-weight: 900; box-shadow: 0 5px #0044aa; text-transform: uppercase; }
+        .btn-work:active { transform: translateY(3px); box-shadow: 0 2px #0044aa; }
+
+        /* НАВИГАЦИЯ */
+        .nav { position: fixed; bottom: 0; width: 100%; background: #0a0a0f; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #222; }
+        .nav-item { color: #555; text-align: center; font-size: 10px; flex: 1; cursor: pointer; transition: 0.3s; }
+        .nav-item.active { color: var(--blue); }
+        .nav-icon { font-size: 18px; display: block; margin-bottom: 3px; }
     </style>
 </head>
 <body>
-    <div id="setup" class="overlay" style="display:none">
-        <h2 style="letter-spacing: 2px; margin-bottom: 20px;">ГЕНЕРАЛЬНЫЙ ШТАБ</h2>
-        <div class="choice-btn" onclick="init('auto')">⚙️ <div><b>ТЕХЦЕНТР</b><br><small>Тюнинг и ремонт</small></div></div>
-        <div class="choice-btn" onclick="init('farm')">🚜 <div><b>АГРОКОМПЛЕКС</b><br><small>Пищевая индустрия</small></div></div>
-        <div class="choice-btn" onclick="init('mine')">⛏️ <div><b>ДОБЫЧА</b><br><small>Ресурсы и минералы</small></div></div>
-        <div class="choice-btn" onclick="init('trans')">🚛 <div><b>ЛОГИСТИКА</b><br><small>Глобальные перевозки</small></div></div>
+
+    <div class="res-bar">
+        <div class="res-item"><span class="res-label">Капитал</span><span class="res-val" id="money">0</span></div>
+        <div class="res-item"><span class="res-label">Энергия</span><span class="res-val" id="energy">100/100</span></div>
+        <div class="res-item"><span class="res-label">Уровень</span><span class="res-val" id="lvl">1</span></div>
     </div>
 
-    <div id="game" style="display:none">
-        <div class="top-bar">
-            <div><div style="font-size:10px; color:var(--blue)">БАЛАНС</div><div class="stat-value" id="money">0</div></div>
-            <div style="text-align:right;"><div style="font-size:10px; color:#0f0">ДОХОД</div><div style="color:#0f0; font-weight:bold;">+<span id="income">0</span>/сек</div></div>
+    <div class="content-wrapper">
+        <div id="world">
+            <div class="grid"></div>
+            <img id="b-img" class="building" src="https://i.ibb.co/VvW3XW2/file-624212.jpg">
         </div>
 
-        <div id="game-canvas">
-            <div class="building-container" id="building-box">
-                <img id="sprite" class="building-sprite" src="" alt="Empire Object">
+        <!-- ВКЛАДКИ -->
+        <div id="tab-factory" class="tab active">
+            <button class="btn-work" onclick="work()">ЗАПУСТИТЬ ЦИКЛ</button>
+            <div class="card" style="margin-top:20px;">
+                <div><b>Статус системы</b><p style="font-size:11px; color:#888; margin-top:5px;">Объект функционирует нормально.</p></div>
             </div>
         </div>
 
-        <div class="control-panel">
-            <button class="btn-main" onclick="work()">ПРОИЗВОДСТВО</button>
-            <div style="display: flex; justify-content: space-between; font-size: 13px; color: #888;">
-                <span>Уровень: <b id="lvl" style="color:white">1</b></span>
-                <span onclick="upgrade()" style="color:var(--blue); font-weight:bold; text-transform:uppercase; cursor:pointer;">Улучшить (500 🪙)</span>
+        <div id="tab-market" class="tab">
+            <h3 style="color:var(--blue)">Рынок</h3>
+            <div class="card" onclick="upgrade()">
+                <div><b>Модернизация</b><p style="font-size:11px; color:#0f0;">+25 к доходу</p></div>
+                <button style="background:var(--blue); border:none; padding:8px; border-radius:5px; font-weight:bold;">500 🪙</button>
+            </div>
+        </div>
+
+        <div id="tab-vip" class="tab">
+            <h3 style="color:var(--gold)">Премиум 🌟</h3>
+            <div class="card" style="border-left-color: var(--gold)">
+                <div><b>Энергопакет</b><p style="font-size:11px; color:#888;">Мгновенный заряд</p></div>
+                <button onclick="buyStars()" style="background:var(--gold); border:none; padding:8px; border-radius:5px; font-weight:bold;">50 🌟</button>
             </div>
         </div>
     </div>
+
+    <nav class="nav">
+        <div class="nav-item active" onclick="showTab('tab-factory', this)"><span class="nav-icon">🏭</span>ЦЕХ</div>
+        <div class="nav-item" onclick="showTab('tab-market', this)"><span class="nav-icon">🛒</span>РЫНОК</div>
+        <div class="nav-item" onclick="showTab('tab-vip', this)"><span class="nav-icon">🌟</span>VIP</div>
+    </nav>
 
     <script>
         let tg = window.Telegram.WebApp; tg.expand();
-        let balance = 100, passive = 0, level = 1, currentType = '';
-
-        const sprites = {
-            auto: 'https://i.ibb.co/VvW3XW2/file-624212.jpg',
-            farm: 'https://i.ibb.co/KzsXjD1/file-624215.jpg',
-            mine: 'https://i.ibb.co/jvkH3R4/file-624217.jpg',
-            trans: 'https://i.ibb.co/L5wZ6Qx/file-624228.jpg'
-        };
+        let balance = 0, level = 1, energy = 100;
 
         window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const savedBalance = urlParams.get('balance');
-            const savedIndustry = urlParams.get('industry');
-            const savedLevel = urlParams.get('level');
-
-            if (savedIndustry && savedIndustry !== 'None') {
-                init(savedIndustry, parseFloat(savedBalance), parseInt(savedLevel));
-            } else {
-                document.getElementById('setup').style.display = 'flex';
-            }
-        };
-
-        function init(type, bal = 100, lvl = 1) {
-            currentType = type;
-            balance = bal;
-            level = lvl;
-            passive = (level - 1) * 25; // Примерная логика пассивки
-
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('game').style.display = 'block';
-            document.getElementById('sprite').src = sprites[type];
-            
-            if (!window.location.search.includes('industry')) {
-                tg.sendData(JSON.stringify({action: "init_industry", industry: type}));
-            }
+            const p = new URLSearchParams(window.location.search);
+            balance = parseFloat(p.get('balance')) || 0;
+            level = parseInt(p.get('level')) || 1;
             updateUI();
         }
 
+        function showTab(id, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
         function work() {
-            balance += 10 * level; updateUI();
-            document.getElementById('building-box').style.transform = "rotateX(55deg) rotateZ(-45deg) scale(1.08)";
-            setTimeout(() => { document.getElementById('building-box').style.transform = "rotateX(55deg) rotateZ(-45deg) scale(1)"; }, 100);
-            tg.HapticFeedback.impactOccurred('heavy');
+            if(energy > 0) { balance += (10 * level); energy--; updateUI(); tg.HapticFeedback.impactOccurred('heavy'); }
+            else { tg.showAlert("Энергия на нуле!"); }
         }
 
         function upgrade() {
             if(balance >= 500) {
-                balance -= 500; level++; passive += 25;
-                updateUI(); tg.HapticFeedback.notificationOccurred('success');
-                tg.sendData(JSON.stringify({action: "upgrade", level: level, balance: balance}));
-            } else { tg.showAlert("Мало средств!"); }
+                balance -= 500; level++; updateUI();
+                tg.sendData(JSON.stringify({action:"upgrade", level:level, balance:balance}));
+            } else { tg.showAlert("Мало монет!"); }
         }
+
+        function buyStars() { tg.sendData(JSON.stringify({action: "buy_stars_boost"})); }
 
         function updateUI() {
             document.getElementById('money').innerText = Math.floor(balance);
-            document.getElementById('income').innerText = passive;
             document.getElementById('lvl').innerText = level;
+            document.getElementById('energy').innerText = energy + "/100";
         }
 
-        setInterval(() => { if(passive > 0) { balance += passive/10; updateUI(); } }, 100);
+        setInterval(() => { if(energy < 100) energy++; updateUI(); }, 2000);
     </script>
 </body>
 </html>
