@@ -3,132 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Your Industrial Empire Gold</title>
+    <title>Industrial Empire: Real Graphics</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --blue: #00d2ff; --gold: #ffcc00; --bg: #08080a; --card: #121214; --neon: 0 0 15px var(--blue); }
+        :root { --blue: #00d2ff; --gold: #ffcc00; --bg: #050507; --ui: rgba(15, 15, 18, 0.95); }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; user-select: none; overflow: hidden; }
         
-        .header { background: rgba(15, 15, 17, 0.95); padding: 20px; text-align: center; border-bottom: 2px solid var(--blue); box-shadow: var(--neon); z-index: 100; position: relative; }
-        .balance { font-size: 36px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold); }
+        .top-bar { background: var(--ui); padding: 15px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); z-index: 100; position: relative; }
+        .stat-value { font-size: 26px; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+
+        #game-canvas { width: 100%; height: 55vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1a1e, #050507); }
         
-        /* ИГРОВАЯ СЦЕНА */
-        #viewport { width: 100%; height: 55vh; position: relative; background: #111; overflow: hidden; perspective: 1000px; border-bottom: 1px solid #333; }
-        .scene-bg { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; transform: rotateX(60deg) rotateZ(45deg); 
-                    background-image: radial-gradient(#222 1px, transparent 1px); background-size: 30px 30px; opacity: 0.3; }
+        .building-container { position: relative; width: 320px; height: 320px; transform: rotateX(55deg) rotateZ(-45deg); transform-style: preserve-3d; transition: 0.3s; z-index: 10; }
+        .building-sprite { width: 100%; height: 100%; object-fit: contain; transform: rotateZ(45deg) rotateX(-55deg); filter: drop-shadow(0 20px 40px rgba(0,0,0,0.9)); transition: 0.2s; }
         
-        /* ОБЪЕКТЫ */
-        .building { position: absolute; transform-style: preserve-3d; transition: 0.5s; }
-        
-        /* АНИМАЦИИ ГРАФИКИ */
-        (at)keyframes gearRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        (at)keyframes tractorPath { 0% { left: -20%; bottom: 10%; } 50% { left: 110%; bottom: 15%; } 100% { left: -20%; bottom: 10%; } }
-        (at)keyframes smoke { 0% { transform: translateY(0) scale(1); opacity: 0.5; } 100% { transform: translateY(-100px) scale(2); opacity: 0; } }
+        .control-panel { height: 35vh; background: #08080a; border-top: 1px solid #222; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+        .btn-main { background: linear-gradient(135deg, #00d2ff, #0066ff); border: none; color: white; width: 100%; padding: 22px; border-radius: 20px; font-size: 24px; font-weight: 900; box-shadow: 0 6px #0044aa; text-transform: uppercase; cursor: pointer; }
+        .btn-main:active { transform: translateY(4px); box-shadow: 0 2px #0044aa; }
 
-        .active-gear { animation: gearRotate 3s linear infinite; }
-        .moving-unit { animation: tractorPath 15s linear infinite; }
-        .smoke-particle { position: absolute; width: 10px; height: 10px; background: #555; border-radius: 50%; animation: smoke 2s infinite; }
-
-        /* ИНТЕРФЕЙС УПРАВЛЕНИЯ */
-        .ui-panel { height: 30vh; background: var(--bg); padding: 15px; overflow-y: auto; }
-        .btn-action { background: linear-gradient(135deg, var(--blue), #0066ff); border: none; color: white; width: 100%; padding: 20px; border-radius: 20px; font-size: 24px; font-weight: 900; box-shadow: 0 6px #0044aa; text-transform: uppercase; cursor: pointer; }
-        .btn-action:active { transform: translateY(4px); box-shadow: 0 2px #0044aa; }
-
-        .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #555; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
-        .nav-item.active { color: var(--blue); text-shadow: var(--neon); }
-
-        .upgrade-card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 10px; border-left: 5px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
+        .overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        .choice-btn { background: #121214; width: 90%; padding: 20px; margin: 8px; border-radius: 15px; border: 1px solid #333; display: flex; align-items: center; gap: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="selector" style="padding: 40px 20px; text-align: center;">
-        <h1 style="color: var(--blue); text-shadow: var(--neon);">ВЫБОР ОТРАСЛИ</h1>
-        <div style="background: var(--card); padding: 20px; margin: 15px; border-radius: 20px; border: 1px solid #333;" onclick="init('farm')">🚜 АГРОКОМПЛЕКС</div>
-        <div style="background: var(--card); padding: 20px; margin: 15px; border-radius: 20px; border: 1px solid #333;" onclick="init('service')">⚙️ ТЕХЦЕНТР</div>
-        <div style="background: var(--card); padding: 20px; margin: 15px; border-radius: 20px; border: 1px solid #333;" onclick="init('mine')">⛏️ ДОБЫЧА</div>
+    <div id="setup" class="overlay">
+        <h2 style="letter-spacing: 2px; margin-bottom: 20px;">ГЕНЕРАЛЬНЫЙ ШТАБ</h2>
+        <div class="choice-btn" onclick="init('auto')">⚙️ <div><b>ТЕХЦЕНТР</b><br><small>Тюнинг и ремонт</small></div></div>
+        <div class="choice-btn" onclick="init('farm')">🚜 <div><b>АГРОКОМПЛЕКС</b><br><small>Пищевая индустрия</small></div></div>
+        <div class="choice-btn" onclick="init('mine')">⛏️ <div><b>ДОБЫЧА</b><br><small>Ресурсы и минералы</small></div></div>
+        <div class="choice-btn" onclick="init('trans')">🚛 <div><b>ЛОГИСТИКА</b><br><small>Глобальные перевозки</small></div></div>
     </div>
 
-    <div id="app" style="display: none;">
-        <div class="header">
-            <div class="balance" id="money">100</div>
-            <div style="color: #0f0; font-weight: bold; font-size: 14px;">+<span id="pps">0</span>/сек</div>
+    <div id="game" style="display:none">
+        <div class="top-bar">
+            <div><div style="font-size:10px; color:var(--blue)">БАЛАНС</div><div class="stat-value" id="money">100</div></div>
+            <div style="text-align:right;"><div style="font-size:10px; color:#0f0">ДОХОД</div><div style="color:#0f0; font-weight:bold;">+<span id="income">0</span>/сек</div></div>
         </div>
 
-        <div id="viewport">
-            <div class="scene-bg"></div>
-            <div id="objects-layer"></div>
-        </div>
-
-        <div class="ui-panel">
-            <div id="main-tab">
-                <button class="btn-action" onclick="clickWork()">ПРОИЗВОДСТВО</button>
-            </div>
-            <div id="shop-tab" style="display: none;">
-                <div id="shop-items"></div>
+        <div id="game-canvas">
+            <div class="building-container" id="building-box">
+                <img id="sprite" class="building-sprite" src="" alt="Empire Object">
             </div>
         </div>
 
-        <div class="nav">
-            <div class="nav-item active" onclick="showTab('main', this)">🏭 ЗАВОД</div>
-            <div class="nav-item" onclick="showTab('shop', this)">🛒 РЫНОК</div>
+        <div class="control-panel">
+            <button class="btn-main" onclick="work()">ПРОИЗВОДСТВО</button>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: #888;">
+                <span>Уровень: <b id="lvl" style="color:white">1</b></span>
+                <span onclick="upgrade()" style="color:var(--blue); font-weight:bold; text-transform:uppercase;">Улучшить (500 🪙)</span>
+            </div>
         </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp; tg.expand();
-        let state = { money: 100, pps: 0, click: 10, type: '' };
-
-        const layers = {
-            farm: '<div class="building active-gear" style="top:20%; left:20%; font-size:100px;">🌾</div><div class="building moving-unit" style="font-size:50px;">🚜</div>',
-            service: '<div class="building" style="top:30%; left:40%; font-size:120px;">🏢</div><div class="building active-gear" style="top:50%; left:45%; font-size:60px;">⚙️</div>',
-            mine: '<div class="building" style="top:20%; right:10%; font-size:100px;">⛰️</div><div class="building active-gear" style="top:40%; right:15%; font-size:50px;">⛏️</div>'
-        };
+        let balance = 100, passive = 0, level = 1, currentType = '';
 
         function init(type) {
-            state.type = type;
-            document.getElementById('selector').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            document.getElementById('objects-layer').innerHTML = layers[type];
-            renderShop(); updateUI();
+            currentType = type;
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+            
+            const sprites = {
+                auto: 'https://i.ibb.co/VvW3XW2/file-624212.jpg',
+                farm: 'https://i.ibb.co/KzsXjD1/file-624215.jpg',
+                mine: 'https://i.ibb.co/jvkH3R4/file-624217.jpg',
+                trans: 'https://i.ibb.co/L5wZ6Qx/file-624228.jpg'
+            };
+            document.getElementById('sprite').src = sprites[type];
+            
+            // ОТПРАВКА ДАННЫХ БОТУ
+            tg.sendData(JSON.stringify({
+                action: "init_industry",
+                industry: type
+            }));
         }
 
-        function clickWork() {
-            state.money += state.click; updateUI();
-            tg.HapticFeedback.impactOccurred('medium');
+        function work() {
+            balance += 10 * level; updateUI();
+            document.getElementById('building-box').style.transform = "rotateX(55deg) rotateZ(-45deg) scale(1.08)";
+            setTimeout(() => { document.getElementById('building-box').style.transform = "rotateX(55deg) rotateZ(-45deg) scale(1)"; }, 100);
+            tg.HapticFeedback.impactOccurred('heavy');
         }
 
-        function showTab(tab, el) {
-            document.getElementById('main-tab').style.display = tab === 'main' ? 'block' : 'none';
-            document.getElementById('shop-tab').style.display = tab === 'shop' ? 'block' : 'none';
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-        }
-
-        function renderShop() {
-            const shop = document.getElementById('shop-items');
-            const items = [{n: 'Модернизация', c: 500, p: 10}, {n: 'Автоматика', c: 2500, p: 60}, {n: 'Индустрия', c: 15000, p: 400}];
-            shop.innerHTML = items.map(i => `
-                <div class="upgrade-card">
-                    <div><b>${i.n}</b><br><small>Цена: ${i.c}</small></div>
-                    <button style="background:var(--blue); border:none; color:black; padding:10px; border-radius:10px; font-weight:bold;" onclick="buy(${i.c}, ${i.p})">КУПИТЬ</button>
-                </div>
-            `).join('');
-        }
-
-        function buy(c, p) {
-            if(state.money >= c) {
-                state.money -= c; state.pps += p; updateUI();
-                tg.HapticFeedback.notificationOccurred('success');
+        function upgrade() {
+            if(balance >= 500) {
+                balance -= 500; level++; passive += 20;
+                updateUI(); tg.HapticFeedback.notificationOccurred('success');
+                // Отправка боту информации об улучшении
+                tg.sendData(JSON.stringify({action: "upgrade", level: level, balance: balance}));
             } else { tg.showAlert("Мало средств!"); }
         }
 
         function updateUI() {
-            document.getElementById('money').innerText = Math.floor(state.money);
-            document.getElementById('pps').innerText = state.pps;
+            document.getElementById('money').innerText = Math.floor(balance);
+            document.getElementById('income').innerText = passive;
+            document.getElementById('lvl').innerText = level;
         }
 
-        setInterval(() => { if(state.pps > 0) { state.money += state.pps/10; updateUI(); } }, 100);
+        setInterval(() => { if(passive > 0) { balance += passive/10; updateUI(); } }, 100);
     </script>
 </body>
 </html>
