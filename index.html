@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Industrial Empire: Real Graphics</title>
+    <title>Industrial Empire: Synchronized</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --blue: #00d2ff; --gold: #ffcc00; --bg: #050507; --ui: rgba(15, 15, 18, 0.95); }
@@ -26,7 +26,7 @@
     </style>
 </head>
 <body>
-    <div id="setup" class="overlay">
+    <div id="setup" class="overlay" style="display:none">
         <h2 style="letter-spacing: 2px; margin-bottom: 20px;">ГЕНЕРАЛЬНЫЙ ШТАБ</h2>
         <div class="choice-btn" onclick="init('auto')">⚙️ <div><b>ТЕХЦЕНТР</b><br><small>Тюнинг и ремонт</small></div></div>
         <div class="choice-btn" onclick="init('farm')">🚜 <div><b>АГРОКОМПЛЕКС</b><br><small>Пищевая индустрия</small></div></div>
@@ -36,7 +36,7 @@
 
     <div id="game" style="display:none">
         <div class="top-bar">
-            <div><div style="font-size:10px; color:var(--blue)">БАЛАНС</div><div class="stat-value" id="money">100</div></div>
+            <div><div style="font-size:10px; color:var(--blue)">БАЛАНС</div><div class="stat-value" id="money">0</div></div>
             <div style="text-align:right;"><div style="font-size:10px; color:#0f0">ДОХОД</div><div style="color:#0f0; font-weight:bold;">+<span id="income">0</span>/сек</div></div>
         </div>
 
@@ -50,7 +50,7 @@
             <button class="btn-main" onclick="work()">ПРОИЗВОДСТВО</button>
             <div style="display: flex; justify-content: space-between; font-size: 13px; color: #888;">
                 <span>Уровень: <b id="lvl" style="color:white">1</b></span>
-                <span onclick="upgrade()" style="color:var(--blue); font-weight:bold; text-transform:uppercase;">Улучшить (500 🪙)</span>
+                <span onclick="upgrade()" style="color:var(--blue); font-weight:bold; text-transform:uppercase; cursor:pointer;">Улучшить (500 🪙)</span>
             </div>
         </div>
     </div>
@@ -59,24 +59,40 @@
         let tg = window.Telegram.WebApp; tg.expand();
         let balance = 100, passive = 0, level = 1, currentType = '';
 
-        function init(type) {
+        const sprites = {
+            auto: 'https://i.ibb.co/VvW3XW2/file-624212.jpg',
+            farm: 'https://i.ibb.co/KzsXjD1/file-624215.jpg',
+            mine: 'https://i.ibb.co/jvkH3R4/file-624217.jpg',
+            trans: 'https://i.ibb.co/L5wZ6Qx/file-624228.jpg'
+        };
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const savedBalance = urlParams.get('balance');
+            const savedIndustry = urlParams.get('industry');
+            const savedLevel = urlParams.get('level');
+
+            if (savedIndustry && savedIndustry !== 'None') {
+                init(savedIndustry, parseFloat(savedBalance), parseInt(savedLevel));
+            } else {
+                document.getElementById('setup').style.display = 'flex';
+            }
+        };
+
+        function init(type, bal = 100, lvl = 1) {
             currentType = type;
+            balance = bal;
+            level = lvl;
+            passive = (level - 1) * 25; // Примерная логика пассивки
+
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game').style.display = 'block';
-            
-            const sprites = {
-                auto: 'https://i.ibb.co/VvW3XW2/file-624212.jpg',
-                farm: 'https://i.ibb.co/KzsXjD1/file-624215.jpg',
-                mine: 'https://i.ibb.co/jvkH3R4/file-624217.jpg',
-                trans: 'https://i.ibb.co/L5wZ6Qx/file-624228.jpg'
-            };
             document.getElementById('sprite').src = sprites[type];
             
-            // ОТПРАВКА ДАННЫХ БОТУ
-            tg.sendData(JSON.stringify({
-                action: "init_industry",
-                industry: type
-            }));
+            if (!window.location.search.includes('industry')) {
+                tg.sendData(JSON.stringify({action: "init_industry", industry: type}));
+            }
+            updateUI();
         }
 
         function work() {
@@ -88,9 +104,8 @@
 
         function upgrade() {
             if(balance >= 500) {
-                balance -= 500; level++; passive += 20;
+                balance -= 500; level++; passive += 25;
                 updateUI(); tg.HapticFeedback.notificationOccurred('success');
-                // Отправка боту информации об улучшении
                 tg.sendData(JSON.stringify({action: "upgrade", level: level, balance: balance}));
             } else { tg.showAlert("Мало средств!"); }
         }
